@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "watch": "esbuild index.ts --bundle --watch --minify --outfile=dist/content.js"
+    "watch": "esbuild index.ts --bundle --watch --outfile=dist/content.js"
   },
   "dependencies": {
     "esbuild": "^0.15.16",

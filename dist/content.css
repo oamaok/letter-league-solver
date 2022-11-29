@@ -16,3 +16,7 @@
 .highlighted-cell {
   border: 2px solid red;
 }
+
+.wildcard {
+  border-color: blue;
+}

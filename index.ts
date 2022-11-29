@@ -40,6 +40,7 @@ type Cell = {
   row: number
   column: number
   letter: string
+  isWildcard: boolean
 }
 
 let BOARD_WIDTH = 27
@@ -135,10 +136,17 @@ const main = async () => {
     const lettersContainer = document.getElementById(
       "invalid-drop-zone-rack-backdrop"
     )!
-    const letters: string[] = lettersContainer.innerText
-      .toLowerCase()
-      .split("\n")
-      .filter((_, index) => index % 2 === 0)
+    const letters: string[] = Array.from(
+      document.querySelectorAll('[aria-label^="Tile with the letter"]')
+    )
+      .map(
+        (elem) =>
+          elem
+            .getAttribute("aria-label")
+            ?.match(/Tile with the letter (.)/)?.[1] ?? " "
+      )
+      .map((letter) => letter.toLowerCase())
+
     uiContainer.innerText = "letters: " + letters.join(",").toUpperCase() + "\n"
 
     const collectWord = (
@@ -184,7 +192,12 @@ const main = async () => {
 
       if (gridLetter) {
         const nextNode = node[gridLetter]
-        const cell: Cell = { row, column, letter: gridLetter }
+        const cell: Cell = {
+          row,
+          column,
+          letter: gridLetter,
+          isWildcard: false,
+        }
 
         // Cell validity check
         const leftLetter = board.letters[row]?.[column - 1]
@@ -275,97 +288,105 @@ const main = async () => {
         const letterUsed = new Set<string>()
 
         for (let i = 0; i < letters.length; i++) {
-          const letter = letters[i]!
-          if (letterUsed.has(letter)) continue
+          const currentLetter = letters[i]!
           const rest = [...letters.slice(0, i), ...letters.slice(i + 1)]
-          letterUsed.add(letter)
-          const nextNode = node[letter]
-          const cell: Cell = { row, column, letter }
+          const isWildcard = currentLetter === " "
 
-          // Cell validity check
-          const leftLetter = board.letters[row]?.[column - 1]
-          const rightLetter = board.letters[row]?.[column + 1]
-          const aboveLetter = board.letters[row - 1]?.[column]
-          const belowLetter = board.letters[row + 1]?.[column]
+          const lettersToTry = isWildcard
+            ? Object.keys(LETTER_VALUES)
+            : [currentLetter]
 
-          if (dir === "VERTICAL" && (leftLetter || rightLetter)) {
-            const word = collectWord(letter, row, column, "HORIZONTAL")
-            if (!graph[word]?.word) continue
+          for (const letter of lettersToTry) {
+            if (letterUsed.has(letter)) continue
+            letterUsed.add(letter)
+            const nextNode = node[letter]
+            const cell: Cell = { row, column, letter, isWildcard }
+
+            // Cell validity check
+            const leftLetter = board.letters[row]?.[column - 1]
+            const rightLetter = board.letters[row]?.[column + 1]
+            const aboveLetter = board.letters[row - 1]?.[column]
+            const belowLetter = board.letters[row + 1]?.[column]
+
+            if (dir === "VERTICAL" && (leftLetter || rightLetter)) {
+              const word = collectWord(letter, row, column, "HORIZONTAL")
+              if (!graph[word]?.word) continue
+            }
+
+            if (dir === "HORIZONTAL" && (aboveLetter || belowLetter)) {
+              const word = collectWord(letter, row, column, "VERTICAL")
+              if (!graph[word]?.word) continue
+            }
+
+            const nextCells = [cell, ...cells]
+            if (!nextNode) continue
+            let fullWord = true
+            if (dir === "VERTICAL") {
+              const max = Math.max(...nextCells.map((cell) => cell.row))
+              const min = Math.min(...nextCells.map((cell) => cell.row))
+
+              if (board.letters[max + 1]?.[column]) fullWord = false
+              if (board.letters[min - 1]?.[column]) fullWord = false
+
+              res.push(
+                ...search(
+                  max + 1,
+                  column,
+                  dir,
+                  rest,
+                  nextNode.suffix,
+                  nextCells,
+                  originalLength,
+                  visited
+                )
+              )
+              res.push(
+                ...search(
+                  min - 1,
+                  column,
+                  dir,
+                  rest,
+                  nextNode.prefix,
+                  nextCells,
+                  originalLength,
+                  visited
+                )
+              )
+            } else {
+              const max = Math.max(...nextCells.map((cell) => cell.column))
+              const min = Math.min(...nextCells.map((cell) => cell.column))
+
+              if (board.letters[row]?.[max + 1]) fullWord = false
+              if (board.letters[row]?.[min - 1]) fullWord = false
+
+              res.push(
+                ...search(
+                  row,
+                  max + 1,
+                  dir,
+                  rest,
+                  nextNode.suffix,
+                  nextCells,
+                  originalLength,
+                  visited
+                )
+              )
+              res.push(
+                ...search(
+                  row,
+                  min - 1,
+                  dir,
+                  rest,
+                  nextNode.prefix,
+                  nextCells,
+                  originalLength,
+                  visited
+                )
+              )
+            }
+
+            if (fullWord && nextNode.word) res.push(nextCells)
           }
-
-          if (dir === "HORIZONTAL" && (aboveLetter || belowLetter)) {
-            const word = collectWord(letter, row, column, "VERTICAL")
-            if (!graph[word]?.word) continue
-          }
-
-          const nextCells = [cell, ...cells]
-          if (!nextNode) continue
-          let fullWord = true
-          if (dir === "VERTICAL") {
-            const max = Math.max(...nextCells.map((cell) => cell.row))
-            const min = Math.min(...nextCells.map((cell) => cell.row))
-
-            if (board.letters[max + 1]?.[column]) fullWord = false
-            if (board.letters[min - 1]?.[column]) fullWord = false
-
-            res.push(
-              ...search(
-                max + 1,
-                column,
-                dir,
-                rest,
-                nextNode.suffix,
-                nextCells,
-                originalLength,
-                visited
-              )
-            )
-            res.push(
-              ...search(
-                min - 1,
-                column,
-                dir,
-                rest,
-                nextNode.prefix,
-                nextCells,
-                originalLength,
-                visited
-              )
-            )
-          } else {
-            const max = Math.max(...nextCells.map((cell) => cell.column))
-            const min = Math.min(...nextCells.map((cell) => cell.column))
-
-            if (board.letters[row]?.[max + 1]) fullWord = false
-            if (board.letters[row]?.[min - 1]) fullWord = false
-
-            res.push(
-              ...search(
-                row,
-                max + 1,
-                dir,
-                rest,
-                nextNode.suffix,
-                nextCells,
-                originalLength,
-                visited
-              )
-            )
-            res.push(
-              ...search(
-                row,
-                min - 1,
-                dir,
-                rest,
-                nextNode.prefix,
-                nextCells,
-                originalLength,
-                visited
-              )
-            )
-          }
-
-          if (fullWord && nextNode.word) res.push(nextCells)
         }
       }
 
@@ -378,14 +399,49 @@ const main = async () => {
       for (let row = 0; row < BOARD_HEIGHT; row++) {
         for (let column = 0; column < BOARD_WIDTH; column++) {
           if (!board.letters[row]![column]) continue
-          for (const cells of [
+
+          const searches = [
             search(row, column, "VERTICAL", letters).map((cells) =>
               cells.sort((a, b) => a.row - b.row)
             ),
             search(row, column, "HORIZONTAL", letters).map((cells) =>
               cells.sort((a, b) => a.column - b.column)
             ),
-          ].flat()) {
+          ]
+
+          if (board.letters[row + 1]?.[column]) {
+            searches.push(
+              search(row + 1, column, "VERTICAL", letters).map((cells) =>
+                cells.sort((a, b) => a.row - b.row)
+              )
+            )
+          }
+
+          if (board.letters[row - 1]?.[column]) {
+            searches.push(
+              search(row - 1, column, "HORIZONTAL", letters).map((cells) =>
+                cells.sort((a, b) => a.row - b.row)
+              )
+            )
+          }
+
+          if (board.letters[row]?.[column + 1]) {
+            searches.push(
+              search(row, column + 1, "VERTICAL", letters).map((cells) =>
+                cells.sort((a, b) => a.column - b.column)
+              )
+            )
+          }
+
+          if (board.letters[row]?.[column - 1]) {
+            searches.push(
+              search(row, column - 1, "VERTICAL", letters).map((cells) =>
+                cells.sort((a, b) => a.column - b.column)
+              )
+            )
+          }
+
+          for (const cells of searches.flat()) {
             results.push(cells)
           }
         }
@@ -408,6 +464,7 @@ const main = async () => {
     for (const cells of results) {
       let wordMultiplier = 1
       let score = 0
+      let usedLetters = 0
 
       for (const cell of cells) {
         const existingScore = board.points[cell.row]![cell.column]
@@ -415,6 +472,7 @@ const main = async () => {
           score += existingScore
           continue
         }
+        usedLetters++
         const cellMultiplier = board.multipliers[cell.row]![cell.column]
         let letterMultiplier = 1
         if (cellMultiplier) {
@@ -423,10 +481,13 @@ const main = async () => {
           if (cellMultiplier[1] === "L")
             letterMultiplier = parseInt(cellMultiplier[0]!)
         }
+
+        if (cell.isWildcard) continue
+
         score += LETTER_VALUES[cell.letter]! * letterMultiplier
       }
       score *= wordMultiplier
-
+      if (usedLetters === 7) score *= 2
       cellsWithScores.push({
         score,
         cells,
@@ -440,6 +501,10 @@ const main = async () => {
     for (const cell of bestCells[0]!.cells) {
       const index = cell.row * BOARD_WIDTH + cell.column
       boardElement.children[index]?.classList.add("highlighted-cell")
+      boardElement.children[index]?.classList.toggle(
+        "wildcard",
+        cell.isWildcard
+      )
     }
 
     const bestWords = bestCells.map(({ score, cells }) => {

@@ -18,6 +18,7 @@ export const buildGraph = async (
       onProgress(wordIndex / words.length)
       await new Promise((resolve) => window.requestAnimationFrame(resolve))
     }
+    // Stupid hack to avoid getting the `constructor` key of an object
     if (word.includes("constructor")) continue
 
     const letters = word.split("")
@@ -130,21 +131,4 @@ export const buildGraph = async (
     }
   }
   return root
-}
-
-export const search = (letters: string[], node: Record<string, InfixGraph>) => {
-  const res: string[] = []
-
-  for (let i = 0; i < letters.length; i++) {
-    const rest = [...letters.slice(0, i), ...letters.slice(i + 1)]
-    const letter = letters[i]!
-    const n = node[letter]
-    if (!n) continue
-    if (n.word) res.push(n.name)
-
-    res.push(...search(rest, n.suffix))
-    res.push(...search(rest, n.prefix))
-  }
-
-  return res.filter((a, b, c) => c.indexOf(a) === b)
 }

@@ -1,25 +1,6 @@
 import words from "./words.json"
 import { buildGraph, InfixGraph } from "./tree"
 
-/*
-export const search = (letters: string[], node: Record<string, InfixGraph>) => {
-  const res: string[] = []
-
-  for (let i = 0; i < letters.length; i++) {
-    const rest = [...letters.slice(0, i), ...letters.slice(i + 1)]
-    const letter = letters[i]!
-    const n = node[letter]
-    if (!n) continue
-    if (n.word) res.push(n.name)
-
-    res.push(...search(rest, n.suffix))
-    res.push(...search(rest, n.prefix))
-  }
-
-  return res.filter((a, b, c) => c.indexOf(a) === b)
-}
-*/
-
 const LETTER_VALUES: Record<string, number> = {
   a: 1,
   b: 3,
@@ -141,16 +122,15 @@ const main = async () => {
   uiContainer.innerText = "Game started."
 
   const calculateBest = async () => {
-
-    document.querySelectorAll('.highlighted-cell').forEach(element => {
-      element.classList.remove('highlighted-cell')
+    document.querySelectorAll(".highlighted-cell").forEach((element) => {
+      element.classList.remove("highlighted-cell")
     })
 
     boardElement = await getBoardElement()
 
-    BOARD_HEIGHT = parseInt(boardElement.getAttribute('rows')!)
+    BOARD_HEIGHT = parseInt(boardElement.getAttribute("rows")!)
     BOARD_WIDTH = boardElement.childElementCount / BOARD_HEIGHT
-  
+
     const board: Board = readBoard(boardElement)
     const lettersContainer = document.getElementById(
       "invalid-drop-zone-rack-backdrop"
@@ -159,7 +139,7 @@ const main = async () => {
       .toLowerCase()
       .split("\n")
       .filter((_, index) => index % 2 === 0)
-    uiContainer.innerText = "letters: " + letters.join(",").toUpperCase() + '\n'
+    uiContainer.innerText = "letters: " + letters.join(",").toUpperCase() + "\n"
 
     const collectWord = (
       word: string,
@@ -307,7 +287,7 @@ const main = async () => {
           const rightLetter = board.letters[row]?.[column + 1]
           const aboveLetter = board.letters[row - 1]?.[column]
           const belowLetter = board.letters[row + 1]?.[column]
-          
+
           if (dir === "VERTICAL" && (leftLetter || rightLetter)) {
             const word = collectWord(letter, row, column, "HORIZONTAL")
             if (!graph[word]?.word) continue
@@ -408,40 +388,10 @@ const main = async () => {
           ].flat()) {
             results.push(cells)
           }
-
-          /*
-
-      for (const result of results) {
-        const word = result.map((cell) => cell.letter).join("")
-        resultWords.add(word)
-        
-        console.log("Word: ", word)
-        process.stdout.write("-".repeat(width))
-        process.stdout.write("\n")
-        for (let j = 0; j < grid.length; j++) {
-          const c = j % width
-          const r = Math.floor(j / width)
-          const cell = result.find(
-            (cell) => cell.row === r && cell.column === c
-          )
-          if (cell) {
-            process.stdout.write(cell.letter)
-          } else {
-            process.stdout.write(board.letters[j] === null ? " " : board.letters[j])
-          }
-          if (j % width === width - 1) {
-            process.stdout.write("\n")
-          }
-        }
-        process.stdout.write("=".repeat(width))
-        process.stdout.write("\n")
-        
-      }
-      */
         }
       }
     } else {
-      uiContainer.innerText += 'Initial move\n'
+      uiContainer.innerText += "Initial move\n"
       for (const cells of [
         search(9, 13, "VERTICAL", letters).map((cells) =>
           cells.sort((a, b) => a.row - b.row)
@@ -485,25 +435,23 @@ const main = async () => {
 
     const endTime = Date.now()
 
-    const bestCells = 
-      cellsWithScores
-        .sort((a, b) => b.score - a.score)
+    const bestCells = cellsWithScores.sort((a, b) => b.score - a.score)
 
     for (const cell of bestCells[0]!.cells) {
       const index = cell.row * BOARD_WIDTH + cell.column
-      boardElement.children[index]?.classList.add('highlighted-cell')
+      boardElement.children[index]?.classList.add("highlighted-cell")
     }
 
-    const bestWords = bestCells
-        .map(({ score, cells }) => {
-          const word = cells.map((cell) => cell.letter).join("")
+    const bestWords = bestCells.map(({ score, cells }) => {
+      const word = cells.map((cell) => cell.letter).join("")
 
-          return { score, word }
-        })
+      return { score, word }
+    })
 
-    uiContainer.innerText += `Best word is ${bestWords[0].word.toUpperCase()} (${bestWords[0].score} points)\n`
+    uiContainer.innerText += `Best word is ${bestWords[0].word.toUpperCase()} (${
+      bestWords[0].score
+    } points)\n`
     uiContainer.innerText += `Search took ${endTime - startTime}ms`
-        
   }
 
   uiContainer.addEventListener("click", calculateBest)

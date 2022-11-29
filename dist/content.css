@@ -1,0 +1,19 @@
+.solver-ui {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 300px;
+  font-size: 12px;
+  font-family: monospace;
+  height: 100px;
+  background: white;
+  color: black;
+  border: 2px solid black;
+  z-index: 90000001;
+  overflow-y: scroll;
+}
+
+
+.highlighted-cell {
+  border: 2px solid red;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "letter-league-solver",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "watch": "esbuild index.ts --bundle --watch --outfile=dist/content.js"
+  },
+  "dependencies": {
+    "esbuild": "^0.15.16",
+    "prettier": "^2.8.0"
+  }
+}
